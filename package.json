@@ -1,0 +1,54 @@
+{
+  "name": "eslint-plugin-theme-guardrails",
+  "version": "0.1.0",
+  "description": "ESLint rules enforcing MUI theme compliance -- ban hardcoded colors, fontWeight, and fontFamily",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "prettier": "prettier --check \"src/**/*.ts\" \"*.md\" \"*.json\"",
+    "prettier:fix": "prettier --write \"src/**/*.ts\" \"*.md\" \"*.json\"",
+    "build": "tsc",
+    "prepare": "tsc",
+    "prepublishOnly": "tsc"
+  },
+  "keywords": [
+    "eslint",
+    "eslintplugin",
+    "eslint-plugin",
+    "typescript",
+    "mui",
+    "theme",
+    "hardcoded-colors"
+  ],
+  "license": "MIT",
+  "author": "John Pearson",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/johnpphd/eslint-plugin-theme-guardrails"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/eslint": "^9.6.0",
+    "eslint": "^10.0.3",
+    "prettier": "^3.8.1",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.57.0"
+  },
+  "peerDependencies": {
+    "eslint": ">=9.0.0"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
+}
