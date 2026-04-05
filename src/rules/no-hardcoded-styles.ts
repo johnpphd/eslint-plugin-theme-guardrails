@@ -1,7 +1,201 @@
 import type { Rule } from "eslint";
 
 const HEX_COLOR_REGEX = /^#[0-9a-fA-F]{3,8}$/;
-const COLOR_KEY_REGEX = /color/i;
+const HEX_COLOR_SUBSTRING_REGEX = /#[0-9a-fA-F]{3,8}/;
+const FUNCTIONAL_COLOR_REGEX = /(?:rgba?|hsla?)\([^)]*\)/;
+
+const NAMED_CSS_COLORS = new Set([
+  "aliceblue",
+  "antiquewhite",
+  "aqua",
+  "aquamarine",
+  "azure",
+  "beige",
+  "bisque",
+  "black",
+  "blanchedalmond",
+  "blue",
+  "blueviolet",
+  "brown",
+  "burlywood",
+  "cadetblue",
+  "chartreuse",
+  "chocolate",
+  "coral",
+  "cornflowerblue",
+  "cornsilk",
+  "crimson",
+  "cyan",
+  "darkblue",
+  "darkcyan",
+  "darkgoldenrod",
+  "darkgray",
+  "darkgreen",
+  "darkgrey",
+  "darkkhaki",
+  "darkmagenta",
+  "darkolivegreen",
+  "darkorange",
+  "darkorchid",
+  "darkred",
+  "darksalmon",
+  "darkseagreen",
+  "darkslateblue",
+  "darkslategray",
+  "darkslategrey",
+  "darkturquoise",
+  "darkviolet",
+  "deeppink",
+  "deepskyblue",
+  "dimgray",
+  "dimgrey",
+  "dodgerblue",
+  "firebrick",
+  "floralwhite",
+  "forestgreen",
+  "fuchsia",
+  "gainsboro",
+  "ghostwhite",
+  "gold",
+  "goldenrod",
+  "gray",
+  "green",
+  "greenyellow",
+  "grey",
+  "honeydew",
+  "hotpink",
+  "indianred",
+  "indigo",
+  "ivory",
+  "khaki",
+  "lavender",
+  "lavenderblush",
+  "lawngreen",
+  "lemonchiffon",
+  "lightblue",
+  "lightcoral",
+  "lightcyan",
+  "lightgoldenrodyellow",
+  "lightgray",
+  "lightgreen",
+  "lightgrey",
+  "lightpink",
+  "lightsalmon",
+  "lightseagreen",
+  "lightskyblue",
+  "lightslategray",
+  "lightslategrey",
+  "lightsteelblue",
+  "lightyellow",
+  "lime",
+  "limegreen",
+  "linen",
+  "magenta",
+  "maroon",
+  "mediumaquamarine",
+  "mediumblue",
+  "mediumorchid",
+  "mediumpurple",
+  "mediumseagreen",
+  "mediumslateblue",
+  "mediumspringgreen",
+  "mediumturquoise",
+  "mediumvioletred",
+  "midnightblue",
+  "mintcream",
+  "mistyrose",
+  "moccasin",
+  "navajowhite",
+  "navy",
+  "oldlace",
+  "olive",
+  "olivedrab",
+  "orange",
+  "orangered",
+  "orchid",
+  "palegoldenrod",
+  "palegreen",
+  "paleturquoise",
+  "palevioletred",
+  "papayawhip",
+  "peachpuff",
+  "peru",
+  "pink",
+  "plum",
+  "powderblue",
+  "purple",
+  "rebeccapurple",
+  "red",
+  "rosybrown",
+  "royalblue",
+  "saddlebrown",
+  "salmon",
+  "sandybrown",
+  "seagreen",
+  "seashell",
+  "sienna",
+  "silver",
+  "skyblue",
+  "slateblue",
+  "slategray",
+  "slategrey",
+  "snow",
+  "springgreen",
+  "steelblue",
+  "tan",
+  "teal",
+  "thistle",
+  "tomato",
+  "turquoise",
+  "violet",
+  "wheat",
+  "white",
+  "whitesmoke",
+  "yellow",
+  "yellowgreen",
+]);
+
+const BORDER_PROPERTIES = new Set([
+  "border",
+  "borderTop",
+  "borderBottom",
+  "borderLeft",
+  "borderRight",
+  "borderColor",
+  "borderTopColor",
+  "borderBottomColor",
+  "borderLeftColor",
+  "borderRightColor",
+  "outline",
+  "outlineColor",
+]);
+
+/**
+ * Checks a string value for any hardcoded color. Returns the matched
+ * color string on the first hit, or null if nothing was found.
+ */
+function containsHardcodedColor(value: string): string | null {
+  // Full-string hex match
+  if (HEX_COLOR_REGEX.test(value)) return value;
+
+  // Hex color embedded in a compound value
+  const hexSub = HEX_COLOR_SUBSTRING_REGEX.exec(value);
+  if (hexSub) return hexSub[0];
+
+  // Functional color notation (rgb, rgba, hsl, hsla)
+  const fnMatch = FUNCTIONAL_COLOR_REGEX.exec(value);
+  if (fnMatch) return fnMatch[0];
+
+  // Named CSS color (case-insensitive, full-word match)
+  const lower = value.toLowerCase();
+  // For compound values, check each word
+  const words = lower.split(/[\s,/]+/);
+  for (const word of words) {
+    if (NAMED_CSS_COLORS.has(word)) return word;
+  }
+
+  return null;
+}
 
 // Tailwind arbitrary value patterns
 const TW_ARBITRARY_HEX_REGEX = /[\w-]+-\[#[0-9a-fA-F]{3,8}\]/g;
@@ -24,41 +218,33 @@ const CLASSNAME_HELPERS = new Set([
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyNode = any;
 
+const TW_ARBITRARY_CHECKS: ReadonlyArray<{
+  regex: RegExp;
+  messageId: string;
+}> = [
+  { regex: TW_ARBITRARY_HEX_REGEX, messageId: "noTailwindArbitraryColor" },
+  { regex: TW_ARBITRARY_RGB_REGEX, messageId: "noTailwindArbitraryColor" },
+  {
+    regex: TW_ARBITRARY_FONT_WEIGHT_REGEX,
+    messageId: "noTailwindArbitraryFontWeight",
+  },
+  {
+    regex: TW_ARBITRARY_FONT_FAMILY_REGEX,
+    messageId: "noTailwindArbitraryFontFamily",
+  },
+];
+
 function checkTailwindString(
   context: Rule.RuleContext,
   node: AnyNode,
   value: string,
 ) {
-  for (const regex of [TW_ARBITRARY_HEX_REGEX, TW_ARBITRARY_RGB_REGEX]) {
+  for (const { regex, messageId } of TW_ARBITRARY_CHECKS) {
     regex.lastIndex = 0;
     let match;
     while ((match = regex.exec(value)) !== null) {
-      context.report({
-        node,
-        messageId: "noTailwindArbitraryColor",
-        data: { value: match[0] },
-      });
+      context.report({ node, messageId, data: { value: match[0] } });
     }
-  }
-
-  TW_ARBITRARY_FONT_WEIGHT_REGEX.lastIndex = 0;
-  let fwMatch;
-  while ((fwMatch = TW_ARBITRARY_FONT_WEIGHT_REGEX.exec(value)) !== null) {
-    context.report({
-      node,
-      messageId: "noTailwindArbitraryFontWeight",
-      data: { value: fwMatch[0] },
-    });
-  }
-
-  TW_ARBITRARY_FONT_FAMILY_REGEX.lastIndex = 0;
-  let ffMatch;
-  while ((ffMatch = TW_ARBITRARY_FONT_FAMILY_REGEX.exec(value)) !== null) {
-    context.report({
-      node,
-      messageId: "noTailwindArbitraryFontFamily",
-      data: { value: ffMatch[0] },
-    });
   }
 }
 
@@ -82,6 +268,8 @@ const rule: Rule.RuleModule = {
         "Use a Tailwind font-weight utility (e.g., 'font-bold') instead of arbitrary '{{ value }}'. Define custom weights in your Tailwind config.",
       noTailwindArbitraryFontFamily:
         "Use a Tailwind font-family utility (e.g., 'font-sans') instead of arbitrary '{{ value }}'. Define custom font families in your Tailwind config.",
+      noHardcodedBorderNone:
+        "Use theme tokens instead of hardcoded 'none' on '{{ property }}'. Reference theme spacing/border utilities.",
     },
     schema: [
       {
@@ -109,9 +297,8 @@ const rule: Rule.RuleModule = {
     const isTailwindConfig = /tailwind\.config/.test(filename);
 
     // Skip files that are config for the enabled framework(s)
-    if (muiEnabled && isMuiConfig && !tailwindEnabled) return {};
-    if (tailwindEnabled && isTailwindConfig && !muiEnabled) return {};
-    if (isMuiConfig && isTailwindConfig) return {};
+    if ((muiEnabled && isMuiConfig) || (tailwindEnabled && isTailwindConfig))
+      return {};
 
     const visitors: Rule.RuleListener = {};
 
@@ -155,32 +342,41 @@ const rule: Rule.RuleModule = {
           return;
         }
 
-        // Color-related key with hex value
+        // Border properties: flag 'none' and embedded colors
         if (
-          COLOR_KEY_REGEX.test(key) &&
+          BORDER_PROPERTIES.has(key) &&
           value.type === "Literal" &&
-          typeof value.value === "string" &&
-          HEX_COLOR_REGEX.test(value.value)
+          typeof value.value === "string"
         ) {
-          context.report({
-            node: value,
-            messageId: "noHardcodedColor",
-            data: { value: value.value },
-          });
+          if (value.value.toLowerCase() === "none") {
+            context.report({
+              node: value,
+              messageId: "noHardcodedBorderNone",
+              data: { property: key },
+            });
+            return;
+          }
+          const borderColor = containsHardcodedColor(value.value);
+          if (borderColor) {
+            context.report({
+              node: value,
+              messageId: "noHardcodedColor",
+              data: { value: borderColor },
+            });
+          }
           return;
         }
 
-        // Any property with a hex color string value
-        if (
-          value.type === "Literal" &&
-          typeof value.value === "string" &&
-          HEX_COLOR_REGEX.test(value.value)
-        ) {
-          context.report({
-            node: value,
-            messageId: "noHardcodedColor",
-            data: { value: value.value },
-          });
+        // Any string Literal value: check for hardcoded colors
+        if (value.type === "Literal" && typeof value.value === "string") {
+          const colorMatch = containsHardcodedColor(value.value);
+          if (colorMatch) {
+            context.report({
+              node: value,
+              messageId: "noHardcodedColor",
+              data: { value: colorMatch },
+            });
+          }
         }
       };
     }
