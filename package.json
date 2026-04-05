@@ -1,7 +1,7 @@
 {
   "name": "eslint-plugin-theme-guardrails",
-  "version": "0.1.0",
-  "description": "ESLint rules enforcing MUI theme compliance -- ban hardcoded colors, fontWeight, and fontFamily",
+  "version": "0.2.0",
+  "description": "ESLint rules enforcing theme compliance for MUI and Tailwind. Bans hardcoded colors, fontWeight, and fontFamily.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -26,6 +26,7 @@
     "eslint-plugin",
     "typescript",
     "mui",
+    "tailwind",
     "theme",
     "hardcoded-colors"
   ],

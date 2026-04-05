@@ -30,8 +30,8 @@ export default [
 
 ## Rules
 
-| Rule | Description |
-| --- | --- |
+| Rule                                   | Description                                                           |
+| -------------------------------------- | --------------------------------------------------------------------- |
 | `theme-guardrails/no-hardcoded-styles` | Disallow hardcoded colors, fontWeight numbers, and fontFamily strings |
 
 ## License

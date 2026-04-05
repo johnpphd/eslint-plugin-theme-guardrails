@@ -9,6 +9,12 @@ const recommendedRules: Linter.RulesRecord = {
   "theme-guardrails/no-hardcoded-styles": "error",
 };
 
+function makeFrameworkRules(framework: "mui" | "tailwind"): Linter.RulesRecord {
+  return {
+    "theme-guardrails/no-hardcoded-styles": ["error", { framework }],
+  };
+}
+
 const plugin: ESLint.Plugin & {
   configs: Record<string, Linter.Config>;
 } = {
@@ -21,6 +27,22 @@ const plugin: ESLint.Plugin & {
         },
       },
       rules: recommendedRules,
+    },
+    mui: {
+      plugins: {
+        get "theme-guardrails"() {
+          return plugin;
+        },
+      },
+      rules: makeFrameworkRules("mui"),
+    },
+    tailwind: {
+      plugins: {
+        get "theme-guardrails"() {
+          return plugin;
+        },
+      },
+      rules: makeFrameworkRules("tailwind"),
     },
     all: {
       plugins: {
